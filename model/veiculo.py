@@ -11,6 +11,7 @@ from .limitacoes import Limitacoes
 # from . import ParamMec, ParamElet, Motor, Baterias, Limitacoes
 import numpy as np
 import pandas as pd
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class Veiculo:
@@ -268,7 +269,7 @@ class Veiculo:
         return derivada
 
     def dump_resultados(self, versao, path_output='outputs'):
-        arquivo_dump = f'{path_output}/resultados_versao_{versao}.xlsx'
+        arquivo_dump = f'{path_output}/resultados_versao_{versao}_{str(self.limitacoes.vel_min_regen)}.xlsx'
 
         with pd.ExcelWriter(arquivo_dump) as writer:
             self.base_dados_simulacao.to_excel(writer, index=False, sheet_name='Primeira Rodada')
@@ -365,7 +366,7 @@ class Veiculo:
         plt.plot(self.base_dados_simulacao['elapsedTime'],
                  self.base_dados_simulacao['temperatura_motor'])
         temperatura_motor_tempo.suptitle('Temperatura do motor no percurso', fontsize=12)
-        plt.xlabel('Distância (m)', fontsize=10)
+        plt.xlabel('Tempo (s)', fontsize=10)
         plt.ylabel('Temperatura (°C)', fontsize=10)
 
         forca_total_tempo = plt.figure(figsize=(11.69, 8.27))
@@ -374,6 +375,21 @@ class Veiculo:
         forca_total_tempo.suptitle('Força total no percurso', fontsize=12)
         plt.xlabel('Tempo (s)', fontsize=10)
         plt.ylabel('Força trativa (N)', fontsize=10)
+
+        forca_vel = plt.figure(figsize=(11.69, 8.27))
+        plt.scatter(self.base_dados_simulacao['speed'],
+                 self.base_dados_simulacao['forca_trativa'], s=10, c='green')
+        forca_vel.suptitle('Força versus Velocidade', fontsize=12)
+        plt.xlabel('Velocidade (km/h)', fontsize=10)
+        plt.ylabel('Força trativa (N)', fontsize=10)
+
+        # fig = plt.figure()
+        # forca_vel_tempo = fig.add_subplot(111, projection='3d')
+        # forca_vel_tempo.scatter(self.base_dados_simulacao['forca_trativa'], self.base_dados_simulacao['speed'], self.base_dados_simulacao['elapsedTime'])
+        # # forca_vel_tempo.set_title('Força e Velocidade versus tempo', fontsize=12)
+        # forca_vel_tempo.set_ylabel('Velocidade (km/h)', fontsize=10)
+        # forca_vel_tempo.set_xlabel('Força trativa (N)', fontsize=10)
+        # forca_vel_tempo.set_zlabel('Tempo (s)', fontsize=10)
 
         # textos página inicial
         txt1 = '\n\n\n\nParâmetros da simulação: \n\n '
@@ -398,8 +414,10 @@ class Veiculo:
         violacoes_corrente_regen_motor = np.count_nonzero(pd.Series(self.motor.status_violacoes_motor) == 2)
         violacoes_bat_max = np.count_nonzero((self.base_dados_simulacao['status_violacoes_bat'] == 1))
         violacoes_bat_min = np.count_nonzero((self.base_dados_simulacao['status_violacoes_bat'] == 2))
+        vel_media = self.base_dados_simulacao['speed'].mean()
 
         txt7 = '\n\n\nValores consolidados: \n\n '
+        vel_media = 'Velocidade média: ' + str(np.round(vel_media, decimals=2)) + ' km/h \n'
         dist = 'Distância total percorrida: ' + str(np.round(distancia_total, decimals=2)) + ' m \n'
         txt8 = 'Energia total consumida: ' + str(np.round(energia_total_consumida, decimals=2)) + ' Wh \n'
         txt9 = 'Energia total recuperada: ' + str(np.round(energia_total_recuperada, decimals=2)) + ' Wh \n'
@@ -414,7 +432,7 @@ class Veiculo:
         txt16 = 'Quantidade de violações à limitação mínima do banco de baterias: ' + str(
             violacoes_bat_min) + '\n'
 
-        txt_2 = txt7 + dist + txt8 + txt9 + txt10 + txt11 + txt12 + txt13 + txt14 + txt15 + txt16
+        txt_2 = txt7 + vel_media + dist + txt8 + txt9 + txt10 + txt11 + txt12 + txt13 + txt14 + txt15 + txt16
 
         # cria pdf
         pp = PdfPages('outputs/resultados.pdf')
@@ -422,18 +440,6 @@ class Veiculo:
         firstpage.clf()
         print(txt + txt_2)
         firstpage.text(0.5, 0.3, txt + txt_2, transform=firstpage.transFigure, size=12, ha="center")
-
-        # print(temp_max, temp_media, energia_final, energia_total_consumida, energia_total_recuperada,
-        #       energia_total_freios_mec,
-        #       violacoes_corrente_max_motor, violacoes_corrente_regen_motor, violacoes_bat_max, violacoes_bat_min)
-
-        # temperatura média
-        # temperatura máxima
-        # energia final acumulador
-        # energia total consumida
-        # energia total recuperada
-        # violações ao máximo e mínimo das baterias
-        # violações ao máximo e mínimo das correntes de torque
 
         pp.savefig(firstpage)
         pp.savefig(drivecycle)
@@ -445,5 +451,7 @@ class Veiculo:
         pp.savefig(corrente_total_tempo)
         pp.savefig(temperatura_motor_tempo)
         pp.savefig(forca_total_tempo)
+        pp.savefig(forca_vel)
+       # pp.savefig(fig)
 
         pp.close()

@@ -347,7 +347,7 @@ class Motor:
 
         # se infinito, valor alto
         if any(pd.Series(verifica_res_inf)):
-            self.resistencia_termica_motor.loc[verifica_res_inf] = 10000000
+            self.resistencia_termica_motor.loc[verifica_res_inf] = 1000
 
         # massa * calor específico do ferro (kg * J/kg°C =  J/°C)
         self.capacitancia_termica_motor = self.massa_motor * 460
@@ -399,7 +399,7 @@ class Motor:
                 (-1) * (self.veiculo.base_dados_simulacao['diff_tempo'][posicao] / self.tau_termico_motor[posicao]))
         )
         fator_3 = (
-                self.temperatura_motor[posicao - 1]
+                self.veiculo.param_mec.temperatura_ambiente
         )
         val_temperatura_motor = fator_1 * fator_2 + fator_3
         return val_temperatura_motor
